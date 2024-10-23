@@ -1,0 +1,17 @@
+{
+    "name": "example-app",
+    "version": "0.0.0",
+    "description": "",
+    "main": "app.js",
+    "author": "",
+    "license": "Apache 2.0",
+    "type": "module",
+    "dependencies": {
+        "cli-color": "^1.0.0",
+        "matrix-js-sdk": "^34.5.0"
+    },
+    "devDependencies": {
+        "@types/cli-color": "^2.0.6",
+        "@types/node": "^22.7.9"
+    }
+}
