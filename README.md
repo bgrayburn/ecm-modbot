@@ -15,7 +15,7 @@ For the reference implementation, a bot implementaiton only supports a single ch
 - [ ] Add ability to apply policies
 - [ ] Add ability to (propose) update policies
 - [ ] Add ability to enforce policies
-- [ ] Add DM support for administration
+- [ ] Add DM/Management Room support for administration
 - [ ] Add support for multiple chat rooms
 - [ ] Manage invites when already in a room
 - [ ] Check E2E support and implement
