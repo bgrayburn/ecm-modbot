@@ -8,7 +8,9 @@
       enable = true;
     };
   };
+  languages.python.enable = true;
 
+  process.manager.implementation = "overmind";
   processes.ecm-modbot.exec = ''
     npm run dev
   '';

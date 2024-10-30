@@ -4,19 +4,51 @@
 The ECM bot is a reference implemenation of the proposed design pattern found [here](https://github.com/bgrayburn/Evolutionary-Collective-Moderation-Design-Pattern/blob/main/DesignPattern.md). Its main purpose to is collect proposed natural language moderation policies from users in the channel, use a voting system to transition them to the `accepted` status, then apply them to the channel. The reference implementation uses Matrix as the communication layer, and Git to as a policy store.
 For the reference implementation, a bot implementaiton only supports a single chat room.
 
-## Setup
+## Design
+```mermaid
+  erDiagram
+    ROOM {
+      homeserver string
+      accessToken string
+      userId: string
+      roomId: string
+    }
+    POLICY_REPOSITORY {
+      string git_url
+    }
+    POLICY {
+      string name
+      string content
+      string status
+      string author
+      string created_at
+      string updated_at
+      string applied_at
+    }
+    MESSAGE {
+      string id
+      string sender
+      string content
+    }
+    BOT {
+      string userId
+    }
+    ROOM ||--o{ POLICY : contains
+    POLICY_REPOSITORY ||--o{ POLICY : contains
+    POLICY_REPOSITORY ||--|| ROOM : manages
+    ROOM ||--o{ MESSAGE : contains
+    BOT ||--|| ROOM : moderates
+    BOT ||--|| POLICY_REPOSITORY : manages
+```
 
+## Setup
 
 ## Usage
 
 ## Todos
-- [ ] Add ability to propose policies
-- [ ] Add ability to vote on policies
-- [ ] Add ability to apply policies
-- [ ] Add ability to (propose) update policies
-- [ ] Add ability to enforce policies
-- [ ] Add DM/Management Room support for administration
-- [ ] Add support for multiple chat rooms
-- [ ] Manage invites when already in a room
 - [ ] Check E2E support and implement
+- [ ] Add server class?
 - [ ] Human overrides?
+
+## Open Questions
+- Can GPT suggest when policies are ambiguous?

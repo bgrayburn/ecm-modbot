@@ -6,11 +6,12 @@
     "author": "Brian Rayburn (bgrayburn@gmail.com)",
     "type": "module",
     "scripts": {
-        "dev": "tsx watch src/app.ts"
+        "dev": "tsx watch --inspect-brk src/app.ts"
     },
     "dependencies": {
         "cli-color": "^1.0.0",
         "matrix-js-sdk": "^34.5.0",
+        "openai": "^4.69.0",
         "typescript": "^5.6.3"
     },
     "devDependencies": {
