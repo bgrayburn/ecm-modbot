@@ -11,7 +11,7 @@ console.log(`roomId: ${roomId}`)
 
 const roomConfig: RoomConfig = { homeserver, userId, accessToken, roomId }
 
-const policyRepoPath = process.env.POLICY_REPO_PATH || "./policies";
+const policyRepoPath = process.env.POLICY_REPO_PATH || "./data";
 const policyRepoConfig: PolicyRepoConfig = { basePath: policyRepoPath }
 
 const bot = new Bot(roomConfig, policyRepoConfig)

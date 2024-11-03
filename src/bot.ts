@@ -10,7 +10,7 @@ export default class Bot {
 
   constructor(roomConfig: RoomConfig, policyRepoConfig: PolicyRepoConfig){
     this.room = new Room(roomConfig, this.handleNewMessage.bind(this))
-    // this.policyRepo = new PolicyRepo(policyRepoConfig)
+    this.policyRepo = new PolicyRepo(policyRepoConfig)
     // this.policyChecker = new PolicyChecker()
   }
 
@@ -71,7 +71,8 @@ export default class Bot {
         this.room.sendMessage(allPolicies.join(', '))
         break;
       case 'policy':
-        this.room.sendMessage((await this.policyRepo.getPolicy(args[0])).content)
+        const policy = await this.policyRepo.getPolicy(args[0])
+        this.room.sendMessage(JSON.stringify(policy, null, 2))
         break
       case 'proposePolicy':
         this.policyRepo.addProposedPolicy(args[0], args.slice(1).join(' '), author)

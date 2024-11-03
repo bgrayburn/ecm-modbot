@@ -28,8 +28,12 @@ export default class PolicyRepo {
   }
 
   private async getPolicyFileAtPath(policyPath: string, name: string): Promise<PolicyFile | undefined> {
-    const file = await fs.readFile(policyPath + '/' + name)
-    return file ? { ...JSON.parse(file.toString()) as PolicyFile } : undefined
+    try {
+      const file = await fs.readFile(policyPath + '/' + name)
+      return { ...JSON.parse(file.toString()) as PolicyFile }
+    } catch {
+      return undefined
+    }
   }
 
   async addProposedPolicy(policyName: string, policyContent: string, policyAuthor: string) {
