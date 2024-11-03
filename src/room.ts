@@ -1,4 +1,4 @@
-import matrixSDK, { EventType, MatrixClient, MsgType, RoomEvent } from "matrix-js-sdk";
+import matrixSDK, { ClientEvent, EventType, KnownMembership, MatrixClient, MsgType, RoomEvent } from "matrix-js-sdk";
 import { Message, RoomConfig } from "./types";
 
 export default class Room {
@@ -19,13 +19,53 @@ export default class Room {
       userId: this.userId
     });
 
-    // check if already in room
-    if (this.matrixClient.getRoom(this.roomId) === undefined) {
-      this.joinRoom(this.roomId)
-    } else {
-      console.log(JSON.stringify(this.matrixClient.getRoom(this.roomId)))
-    }
+    // this.listenForClientEvents();
+    // this.listenForRoomInvitations()
+    this.joinRoom(this.roomId);
     this.listenForMessages(newMessageHandler);
+    this.matrixClient.startClient({ initialSyncLimit: 0 });
+  }
+
+  // joinRoomIfNotAlreadyMember(roomId) {
+  //   if (this.matrixClient.getRoom(this.roomId) === null) {
+  //     console.log(`joining room ${this.roomId}`)
+  //     this.joinRoom(this.roomId)
+  //   } else {
+  //     console.log(JSON.stringify(this.matrixClient.getRoom(this.roomId)))
+  //   }
+  // }
+
+  listenForClientEvents() {
+    this.matrixClient.on(ClientEvent.Event, (event) => {
+      console.log(event.getType())
+    })
+  }
+
+  listenForRoomInvitations() {
+    this.matrixClient.on(RoomEvent.MyMembership, (room, membership, prevMembership) => {
+      if (membership === KnownMembership.Invite) {
+        console.log(`got an invite to room ${room.roomId}`)
+        this.matrixClient.joinRoom(room.roomId).then((state) => {
+          console.log("Joined room " + room.roomId);
+        }).catch((err) => {
+          console.log("Error joining room " + room.roomId + ": " + err);
+        });
+      }
+    })
+  }
+
+  listenForMessages(newMessageHandler: (msg: Message) => void) {
+    this.matrixClient.on(RoomEvent.Timeline, (event, room, toStartOfTimeline) => {
+      if (event.getType() === EventType.RoomMessage && event.getContent().msgtype === MsgType.Text) {
+        const body = event.getContent().body;
+        const msg: Message = {
+          id: event.getId(),
+          content: body,
+          author: event.getSender()
+        }
+        newMessageHandler(msg)
+      }
+    });
   }
 
   sendMessage(message: string) {
@@ -49,21 +89,6 @@ export default class Room {
       console.log("Joined room " + roomId);
     }).catch(function(err) {
       console.log("Error joining room " + roomId + ": " + err);
-    });
-  }
-
-  listenForMessages(newMessageHandler: (msg: Message) => void) {
-    this.matrixClient.on(RoomEvent.Timeline, (event, room, toStartOfTimeline) => {
-      if (event.getType() === EventType.RoomMessage && event.getContent().msgtype === MsgType.Text) {
-        const body = event.getContent().body;
-        const msg: Message = {
-          id: event.getId(),
-          content: body,
-          author: event.getSender()
-        }
-        console.log('about to handle new message: ', JSON.stringify(msg))
-        newMessageHandler(msg)
-      }
     });
   }
 }

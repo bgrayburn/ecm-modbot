@@ -6,7 +6,8 @@
     "author": "Brian Rayburn (bgrayburn@gmail.com)",
     "type": "module",
     "scripts": {
-        "dev": "tsx watch --inspect-brk src/app.ts"
+        "dev": "tsx watch src/app.ts",
+        "dev-inspect": "tsx watch --inspect-brk src/app.ts"
     },
     "dependencies": {
         "cli-color": "^1.0.0",

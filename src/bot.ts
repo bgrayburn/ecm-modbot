@@ -9,15 +9,16 @@ export default class Bot {
   policyChecker: PolicyChecker
 
   constructor(roomConfig: RoomConfig, policyRepoConfig: PolicyRepoConfig){
-    this.room = new Room(roomConfig, this.handleNewMessage)
-    this.policyRepo = new PolicyRepo(policyRepoConfig)
-    this.policyChecker = new PolicyChecker()
+    this.room = new Room(roomConfig, this.handleNewMessage.bind(this))
+    // this.policyRepo = new PolicyRepo(policyRepoConfig)
+    // this.policyChecker = new PolicyChecker()
   }
 
   handleNewMessage(message: Message): void {
     // check if message is command to bot
-    if (message.content.startsWith(`@${this.room.userId}`)) {
-      this.handleCommand(message.content)
+    console.log(`handling message: ${JSON.stringify(message, null, 2)}`)
+    if (message.content.startsWith(`${this.room.userId.slice(1).split(':')[0]}:`)) {
+      this.handleCommand(message.content, message.author)
       return
     }
     //check if message is from bot
@@ -25,9 +26,9 @@ export default class Bot {
       return
     }
     // check message against policies
-    const activePolicies = this.policyRepo.getActivePolicies()
-    const policyCheckResponses = this.checkMessageAgainstPolicies(message, activePolicies)
-    this.executeActions(policyCheckResponses.flatMap(response => response.actions))
+    // const activePolicies = this.policyRepo.getActivePolicies()
+    // const policyCheckResponses = this.checkMessageAgainstPolicies(message, activePolicies)
+    // this.executeActions(policyCheckResponses.flatMap(response => response.actions))
   }
 
   checkMessageAgainstPolicies(message: Message, policies: Policy[]): PolicyCheckResponse[] {
@@ -56,30 +57,31 @@ export default class Bot {
     })
   }
 
-  handleCommand(message: string): void {
-    // remove the 1st word (the bot's username)
-    const splitMessage = message.split(' ')
-    const command = splitMessage[1]
-    const args = splitMessage.slice(2)
+  async handleCommand(messageContent: string, author: string): Promise<void> {
+    console.log(`handling command: ${messageContent}`)
+    const splitMessageContent = messageContent.split(' ')
+    const command = splitMessageContent[1]
+    const args = splitMessageContent.slice(2)
     switch (command) {
       case 'help':
-        this.room.sendMessage('Available commands: help, policies, activate, deactivate')
+        this.room.sendMessage('Available commands: help, policies, policy, proposePolicy, approve')
         break;
       case 'policies':
-        this.room.sendMessage(this.policyRepo.getAllPolicies().map(policy => policy.name).join(', '))
+        const allPolicies = await this.policyRepo.getAllPolicies()
+        this.room.sendMessage(allPolicies.join(', '))
         break;
       case 'policy':
-        this.room.sendMessage(this.policyRepo.getPolicy(args[0]).content)
-      case 'activate': // TODO: remove this after voting works
-        this.policyRepo.activatePolicy(args[0])
-        this.room.sendMessage(`Activated policy: ${args[0]}`)
+        this.room.sendMessage((await this.policyRepo.getPolicy(args[0])).content)
+        break
+      case 'proposePolicy':
+        this.policyRepo.addProposedPolicy(args[0], args.slice(1).join(' '), author)
         break;
-      case 'deactivate': // TODO: remove this after voting works
-        this.policyRepo.deactivatePolicy(args[0])
-        this.room.sendMessage(`Deactivated policy: ${args[0]}`)
+      case 'approve': // TODO: remove this after voting works
+        this.policyRepo.approvePolicy(args[0])
+        this.room.sendMessage(`Approved policy: ${args[0]}`)
         break;
       default:
-        this.room.sendMessage('Unknown command')
+        this.room.sendMessage(`Unknown command ${args.join(' ')}`)
     }
   }
 }

@@ -5,16 +5,24 @@ export type RoomConfig = {
    roomId: string
 }
 
-export type PolicyStatus = Enumerator<"approved" | "pending" | "denied">;
+// TODO: add denied status
+export enum PolicyStatus {
+  Approved = 'approved',
+  Proposed = 'proposed',
+};
 
-export type Policy = {
-  name: string
-  status: PolicyStatus
+export interface PolicyFile {
   content: string
   createdAt: string
   updatedAt: string
-  appliedAt: string
+  approvedAt?: string
+  votes: boolean[]
   author: string
+}
+
+export interface Policy extends PolicyFile {
+  name: string
+  status: PolicyStatus
 }
 
 export type Message = {
@@ -24,8 +32,7 @@ export type Message = {
 }
 
 export type PolicyRepoConfig = {
-   url: string,
-   accessToken: string,
+   basePath: string,
 }
 
 export type PolicyCheckResponse = {
