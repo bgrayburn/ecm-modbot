@@ -52,6 +52,9 @@ export default class Room {
           content: body,
           author: event.getSender()
         }
+        if (msg.author !== this.userId) {
+          this.matrixClient.sendReadReceipt(event)
+        }
         newMessageHandler(msg)
       }
     });

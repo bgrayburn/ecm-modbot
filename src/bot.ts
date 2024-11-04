@@ -84,8 +84,10 @@ export default class Bot {
         this.room.sendMessage('Available commands: help, policies, policy, proposePolicy, approve')
         break;
       case 'policies':
-        const allPolicies = await this.policyRepo.getAllPolicyNames()
-        this.room.sendMessage(allPolicies.join(', '))
+        const proposedPolicies = await this.policyRepo.getProposedPolicyNames()
+        const approvedPolicies = await this.policyRepo.getApprovedPolicyNames()
+        const message = `Proposed policies: ${proposedPolicies.join(', ')}\nApproved policies: ${approvedPolicies.join(', ')}`
+        this.room.sendMessage(message)
         break;
       case 'policy':
         const policy = await this.policyRepo.getPolicy(args[0])

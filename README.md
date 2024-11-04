@@ -47,6 +47,8 @@ For the reference implementation, a bot implementaiton only supports a single ch
 
 ## Todos
 - [ ] add voting system
+- [ ] add the ability to direct chat users to instruct them why actions were taken against them
+- [ ] add the ability to update the policies using natural language
 - [ ] add E2E support
 - [ ] Add matrix server class?
 - [ ] Human overrides for bot decisions?

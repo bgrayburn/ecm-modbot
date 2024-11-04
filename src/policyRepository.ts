@@ -133,7 +133,10 @@ export default class PolicyRepo {
 
   approvePolicy(policyName: string) {
     const proposedPolicyPath = path.join(this.basePath, 'proposed', policyName)
+    const proposedPolicyFile = fs.readFile(proposedPolicyPath)
+    fs.unlink(proposedPolicyPath)
+    const approvedPolicyFile = { ...proposedPolicyFile, approvedAt: new Date().toISOString() }
     const approvedPolicyPath = path.join(this.basePath, 'approved', policyName)
-    return fs.rename(proposedPolicyPath, approvedPolicyPath)
+    return fs.writeFile(approvedPolicyPath, JSON.stringify(approvedPolicyFile))
   }
 }
