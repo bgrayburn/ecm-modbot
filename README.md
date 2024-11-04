@@ -46,6 +46,7 @@ For the reference implementation, a bot implementaiton only supports a single ch
 ## Usage
 
 ## Todos
+- [ ] add voting system
 - [ ] add E2E support
 - [ ] Add matrix server class?
 - [ ] Human overrides for bot decisions?

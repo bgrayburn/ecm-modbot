@@ -7,6 +7,7 @@ export default class PolicyRepo {
 
   constructor(policyRepoConfig: PolicyRepoConfig) {
     this.basePath = policyRepoConfig.basePath
+    // TODO: check that base path and child folder exist or create them
   }
 
   private policyToPolicyFile(policy: Policy): PolicyFile {
