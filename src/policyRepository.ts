@@ -1,5 +1,6 @@
 import { Policy, PolicyFile, PolicyStatus, PolicyRepoConfig } from "./types";
 import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 
 export default class PolicyRepo {
   basePath: string
@@ -20,16 +21,19 @@ export default class PolicyRepo {
 
   private async addPolicy(policy: Policy) {
     const policyFile = this.policyToPolicyFile(policy)
-    return await fs.writeFile(`${this.basePath}/${policy.status}/${policy.name}`, JSON.stringify(policyFile))
+    const writePath = path.join(this.basePath, policy.status, policy.name)
+    return await fs.writeFile(writePath, JSON.stringify(policyFile))
   }
 
   private removeProposedPolicy(policyName: string) {
-    return fs.unlink(this.basePath + '/proposed/' + policyName)
+    const removePath = path.join(this.basePath, 'proposed', policyName)
+    return fs.unlink(removePath)
   }
 
   private async getPolicyFileAtPath(policyPath: string, name: string): Promise<PolicyFile | undefined> {
     try {
-      const file = await fs.readFile(policyPath + '/' + name)
+      const readPath = path.join(policyPath, name)
+      const file = await fs.readFile(readPath)
       return { ...JSON.parse(file.toString()) as PolicyFile }
     } catch {
       return undefined
@@ -62,7 +66,7 @@ export default class PolicyRepo {
 
   async addVoteOnPolicy(policyName, vote: boolean) {
     // TODO: check if policy exists
-    const policyPath = this.basePath + '/proposed/' + policyName
+    const policyPath = path.join(this.basePath, 'proposed', policyName)
     const file = await fs.readFile(policyPath)
     const policyFile = JSON.parse(file.toString()) as PolicyFile
     const votes = policyFile.votes.concat(vote)
@@ -70,12 +74,14 @@ export default class PolicyRepo {
   }
 
   async getProposedPolicy(name: string): Promise<Policy | undefined> {
-    const policyFile = await this.getPolicyFileAtPath(this.basePath + '/proposed', name)
+    const policyPath = path.join(this.basePath, 'proposed')
+    const policyFile = await this.getPolicyFileAtPath(policyPath, name)
     return policyFile ? { ...policyFile, status: PolicyStatus.Proposed, name } as Policy : undefined
   }
 
   async getApprovedPolicy(name: string): Promise<Policy | undefined> {
-    const policyFile = await this.getPolicyFileAtPath(this.basePath + '/approved', name)
+    const policyPath = path.join(this.basePath, 'approved')
+    const policyFile = await this.getPolicyFileAtPath(policyPath, name)
     return policyFile ? { ...policyFile, status: PolicyStatus.Approved, name } as Policy : undefined
   }
 
@@ -102,19 +108,31 @@ export default class PolicyRepo {
     return votes
   }
 
+  getApprovedPolicyNames() {
+    const approvedPath = path.join(this.basePath, 'approved')
+    return fs.readdir(approvedPath)
+  }
+
+  getProposedPolicyNames() {
+    const proposedPath = path.join(this.basePath, 'proposed')
+    return fs.readdir(proposedPath)
+  }
+
   getApprovedPolicies() {
-    return fs.readdir(this.basePath + '/approved')
+    return this.getApprovedPolicyNames().then(files => {
+       return Promise.all(files.map(file => {
+         return this.getApprovedPolicy(file)
+       }))
+     })
   }
 
-  getProposedPolicies() {
-    return fs.readdir(this.basePath + '/proposed')
-  }
-
-  async getAllPolicies(): Promise<string[]> {
-    return (await this.getApprovedPolicies()).concat(await this.getProposedPolicies())
+  async getAllPolicyNames(): Promise<string[]> {
+    return (await this.getApprovedPolicyNames()).concat(await this.getProposedPolicyNames())
   }
 
   approvePolicy(policyName: string) {
-    return fs.rename(this.basePath + '/proposed/' + policyName, this.basePath + '/approved/' + policyName)
+    const proposedPolicyPath = path.join(this.basePath, 'proposed', policyName)
+    const approvedPolicyPath = path.join(this.basePath, 'approved', policyName)
+    return fs.rename(proposedPolicyPath, approvedPolicyPath)
   }
 }

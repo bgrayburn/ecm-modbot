@@ -19,21 +19,10 @@ export default class Room {
       userId: this.userId
     });
 
-    // this.listenForClientEvents();
-    // this.listenForRoomInvitations()
     this.joinRoom(this.roomId);
     this.listenForMessages(newMessageHandler);
     this.matrixClient.startClient({ initialSyncLimit: 0 });
   }
-
-  // joinRoomIfNotAlreadyMember(roomId) {
-  //   if (this.matrixClient.getRoom(this.roomId) === null) {
-  //     console.log(`joining room ${this.roomId}`)
-  //     this.joinRoom(this.roomId)
-  //   } else {
-  //     console.log(JSON.stringify(this.matrixClient.getRoom(this.roomId)))
-  //   }
-  // }
 
   listenForClientEvents() {
     this.matrixClient.on(ClientEvent.Event, (event) => {

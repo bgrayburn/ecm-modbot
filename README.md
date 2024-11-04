@@ -46,9 +46,9 @@ For the reference implementation, a bot implementaiton only supports a single ch
 ## Usage
 
 ## Todos
-- [ ] Check E2E support and implement
-- [ ] Add server class?
-- [ ] Human overrides?
+- [ ] add E2E support
+- [ ] Add matrix server class?
+- [ ] Human overrides for bot decisions?
 
 ## Open Questions
 - Can GPT suggest when policies are ambiguous?

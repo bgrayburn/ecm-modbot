@@ -1,7 +1,8 @@
-import { RoomConfig, PolicyRepoConfig, PolicyCheckResponse, Policy, BotAction, Message } from "./types";
+import { RoomConfig, PolicyRepoConfig,  Policy, ActionOptions, Action, Message } from "./types";
 import PolicyRepo from "./policyRepository";
 import Room from "./room";
-import PolicyChecker from "./policyChecker";
+import PolicyChecker, { PolicyCheckResponse } from "./policyChecker";
+import { getEnumValues } from "./util/typeUtil";
 
 export default class Bot {
   policyRepo: PolicyRepo
@@ -11,10 +12,10 @@ export default class Bot {
   constructor(roomConfig: RoomConfig, policyRepoConfig: PolicyRepoConfig){
     this.room = new Room(roomConfig, this.handleNewMessage.bind(this))
     this.policyRepo = new PolicyRepo(policyRepoConfig)
-    // this.policyChecker = new PolicyChecker()
+    this.policyChecker = new PolicyChecker()
   }
 
-  handleNewMessage(message: Message): void {
+  async handleNewMessage(message: Message): Promise<void> {
     // check if message is command to bot
     console.log(`handling message: ${JSON.stringify(message, null, 2)}`)
     if (message.content.startsWith(`${this.room.userId.slice(1).split(':')[0]}:`)) {
@@ -26,33 +27,49 @@ export default class Bot {
       return
     }
     // check message against policies
-    // const activePolicies = this.policyRepo.getActivePolicies()
-    // const policyCheckResponses = this.checkMessageAgainstPolicies(message, activePolicies)
-    // this.executeActions(policyCheckResponses.flatMap(response => response.actions))
+    const approvedPolicies = await this.policyRepo.getApprovedPolicies()
+    const policyCheckResponse = await this.checkMessageAgainstPolicies(message, approvedPolicies)
+    console.log('policyCheckResponse:')
+    console.log(JSON.stringify(policyCheckResponse, null, 2))
+    this.executeActions(policyCheckResponse.suggested_actions)
   }
 
-  checkMessageAgainstPolicies(message: Message, policies: Policy[]): PolicyCheckResponse[] {
-    const responses: PolicyCheckResponse[] = this.policyChecker.checkMessageAgainstPolicies(message, policies)
-    return responses
+  async checkMessageAgainstPolicies(message: Message, policies: Policy[]): Promise<PolicyCheckResponse> {
+    const actionOptions = this.getListOfActionOptions()
+    const promptTemplateVariables = {
+      message: message.content,
+      author: message.author,
+      actionOptions: actionOptions.join(', '),
+    }
+    const response: PolicyCheckResponse = await this.policyChecker.checkMessageAgainstPolicies(message, policies, actionOptions)
+    return response
   }
 
-  executeActions(actions: BotAction[]): void {
+  private getListOfActionOptions = (): string[] => {
+    return getEnumValues<ActionOptions>(ActionOptions)
+  }
+
+  executeActions(actions: Action[]): void {
     actions.forEach(action => {
       switch (action.type) {
-        case 'sendMessage':
+        case ActionOptions.SendMessage:
           this.room.sendMessage(action.message)
           break;
-        case 'redactMessage':
+        case ActionOptions.RedactMessage:
           this.room.redactMessage(action.eventId)
           break;
-        case 'kickUser':
+        case ActionOptions.KickUser:
           this.room.kickUser(action.userId)
           break;
-        case 'banUser':
+        case ActionOptions.BanUser:
           this.room.banUser(action.userId)
           break;
         default:
-          console.error(`Unknown action type: ${action.type}`)
+          if (action.type in ActionOptions) {
+            throw Error(`Action ${action.type} is not implemented`)
+          } else {
+            throw Error(`Unknown action type: ${action.type}`)
+          }
       }
     })
   }
@@ -67,7 +84,7 @@ export default class Bot {
         this.room.sendMessage('Available commands: help, policies, policy, proposePolicy, approve')
         break;
       case 'policies':
-        const allPolicies = await this.policyRepo.getAllPolicies()
+        const allPolicies = await this.policyRepo.getAllPolicyNames()
         this.room.sendMessage(allPolicies.join(', '))
         break;
       case 'policy':

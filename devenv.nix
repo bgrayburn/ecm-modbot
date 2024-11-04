@@ -1,6 +1,9 @@
 { pkgs, lib, config, inputs, ... }:
 
 {
+  packages = with pkgs; [
+    git
+  ];
   languages.typescript.enable = true;
   languages.javascript = {
     enable = true;

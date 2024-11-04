@@ -1,62 +1,38 @@
+import * as z from "zod";
+import { zodResponseFormat } from "openai/helpers/zod"
 import OpenAI from "openai";
+import promptTemplate from "./openAIPrompt"
+import { PromptTemplateVariables } from "../types";
+
+const fillPromptTemplate = (promptTemplate: string, variables: {}) => {
+  return promptTemplate.replace(/\{\{(\w+)\}\}/g, (_, key) => JSON.stringify(variables[key]));
+};
 
 // Initialize the OpenAI client
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: process.env.OPENAI_API_KEY
 });
 
-// TODO: complete prompt
-const prompt =
-  "";
-
-// TODO: complete functions for this application
-const functions = [
-  {
-    name: "getInstructionResponse",
-    description:
-      "Provides a voxdocs instruction response in a structured JSON format",
-    parameters: {
-      type: "object",
-      properties: {
-        document: {
-          type: "string",
-          description: "The text of the updated document",
-        },
-        message: {
-          type: "string",
-          description: "The message to the user",
-        },
-      },
-      required: ["document", "message"],
-    },
-  },
-];
-
 // Function to get a response conforming to the specified JSON schema
-export async function getAssistantResponse(jsonInput: object) {
+export async function getAssistantResponse<T extends z.ZodRawShape>(
+  promptTemplateVariables: PromptTemplateVariables,
+  responseSchema: z.ZodObject<T>,
+  promptTemplate: string
+) {
   try {
+    const prompt = fillPromptTemplate(promptTemplate, promptTemplateVariables)
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "user", content: prompt },
-        { role: "user", content: JSON.stringify(jsonInput) },
+        { role: "user", content: prompt }
       ],
-      functions: functions,
-      function_call: { name: "getInstructionResponse" },
+      response_format: zodResponseFormat(responseSchema, "response_schema")
     });
 
-    if (completion.choices[0].message.tool_calls) {
-      // Extract the function call arguments (structured JSON)
-      const functionArgs =
-        completion.choices[0].message.tool_calls[0].function.arguments;
-      const response = JSON.parse(functionArgs);
-
-      return response;
-    } else {
-      throw new Error("No function call on return object.");
-    }
+    const response = responseSchema.parse(JSON.parse(completion.choices[0].message.content));
+    return response;
   } catch (error) {
-    console.error("Error generating response:", error);
-    return { error: "Failed to generate a valid JSON response." };
+    console.error(error)
+    throw new Error(error)
   }
 }

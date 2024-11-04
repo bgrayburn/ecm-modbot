@@ -1,3 +1,5 @@
+import * as z from "zod";
+
 export type RoomConfig = {
    homeserver: string,
    accessToken: string,
@@ -35,14 +37,24 @@ export type PolicyRepoConfig = {
    basePath: string,
 }
 
-export type PolicyCheckResponse = {
-  policyId: string,
-  actions: BotAction[],
+export enum ActionOptions {
+  SendMessage = 'sendMessage',
+  RedactMessage = 'redactMessage',
+  KickUser = 'kickUser',
+  BanUser = 'banUser'
 }
 
-export type BotAction =  {
-  type: string,
-  message?: string,
-  eventId?: string,
-  userId?: string
+export const ActionSchema = z.object({
+  type: z.nativeEnum(ActionOptions),
+  message: z.string().optional(),
+  eventId: z.string().optional(),
+  userId: z.string().optional()
+})
+
+export type Action = z.infer<typeof Action>
+
+export type PromptTemplateVariables = {
+  policies: Policy[],
+  actions: string[],
+  message: string
 }
