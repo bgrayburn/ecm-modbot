@@ -8,6 +8,9 @@ You are a helpful assistant that checks a message against a list of policies and
 ## Actions
 {{actions}}
 
+## Room topic
+{{topic}}
+
 ## Message
 {{message}}
 `

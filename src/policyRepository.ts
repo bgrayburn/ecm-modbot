@@ -1,5 +1,6 @@
 import { Policy, PolicyFile, PolicyStatus, PolicyRepoConfig } from "./types";
 import * as fs from 'node:fs/promises';
+import { existsSync, mkdirSync } from "node:fs";
 import * as path from 'node:path';
 
 export default class PolicyRepo {
@@ -7,7 +8,13 @@ export default class PolicyRepo {
 
   constructor(policyRepoConfig: PolicyRepoConfig) {
     this.basePath = policyRepoConfig.basePath
-    // TODO: check that base path and child folder exist or create them
+    const subdirectories = ['proposed', 'approved']
+    subdirectories.forEach((dir: string) => {
+      const dirPath = path.join(this.basePath, dir)
+      if (!existsSync(dirPath)) {
+        mkdirSync(dirPath, { recursive: true })
+      }
+    })
   }
 
   private policyToPolicyFile(policy: Policy): PolicyFile {
@@ -20,9 +27,12 @@ export default class PolicyRepo {
      } as PolicyFile
   }
 
-  private async addPolicy(policy: Policy) {
-    const policyFile = this.policyToPolicyFile(policy)
+  private async addPolicy(policy: Policy, overwrite: boolean = true) {
     const writePath = path.join(this.basePath, policy.status, policy.name)
+    if (!overwrite && existsSync(writePath)) {
+      throw new Error(`Policy ${policy.name} already exists`)
+    }    
+    const policyFile = this.policyToPolicyFile(policy)
     return await fs.writeFile(writePath, JSON.stringify(policyFile))
   }
 
@@ -41,7 +51,12 @@ export default class PolicyRepo {
     }
   }
 
-  async addProposedPolicy(policyName: string, policyContent: string, policyAuthor: string) {
+  async addProposedPolicy(
+    policyName: string,
+    policyContent: string,
+    policyAuthor: string,
+    overwrite: boolean = false
+  ) {
     // TODO: check if we're going to have date timezone problems here
     const policy: Policy = {
       name: policyName,
@@ -53,18 +68,9 @@ export default class PolicyRepo {
       votes: [],
       author: policyAuthor
     }
-    return this.addPolicy(policy)
+    return this.addPolicy(policy, overwrite)
   }
   
-  async addApprovedPolicy(policyName: string) {
-    const policy = await this.getProposedPolicy(policyName)
-    if (policy === undefined) {
-      throw new Error('Policy not found')
-    }
-    await this.addPolicy({ ...policy, status: PolicyStatus.Approved, approvedAt: new Date().toISOString() })
-    return this.removeProposedPolicy(policyName)
-  }
-
   async addVoteOnPolicy(policyName, vote: boolean) {
     // TODO: check if policy exists
     const policyPath = path.join(this.basePath, 'proposed', policyName)
@@ -94,7 +100,7 @@ export default class PolicyRepo {
     return await this.getApprovedPolicy(name)
   }
 
-  async getVotesForPolicy(policyName) {
+  async getVotesForPolicy(policyName: string) {
     //use getPolicy to get a policy then tally up the votes for and against
     //return the result as an object with two properties: for and against
     const policy = await this.getPolicy(policyName)
@@ -131,11 +137,13 @@ export default class PolicyRepo {
     return (await this.getApprovedPolicyNames()).concat(await this.getProposedPolicyNames())
   }
 
-  approvePolicy(policyName: string) {
+  async approvePolicy(policyName: string) {
     const proposedPolicyPath = path.join(this.basePath, 'proposed', policyName)
-    const proposedPolicyFile = fs.readFile(proposedPolicyPath)
-    fs.unlink(proposedPolicyPath)
+    const proposedPolicyFile = JSON.parse((await fs.readFile(proposedPolicyPath)).toString())
+    console.log('proposedPolicyFile:')
+    console.log(JSON.stringify(proposedPolicyFile, null, 2))
     const approvedPolicyFile = { ...proposedPolicyFile, approvedAt: new Date().toISOString() }
+    this.removeProposedPolicy(policyName)
     const approvedPolicyPath = path.join(this.basePath, 'approved', policyName)
     return fs.writeFile(approvedPolicyPath, JSON.stringify(approvedPolicyFile))
   }

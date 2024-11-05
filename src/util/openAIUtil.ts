@@ -1,8 +1,6 @@
 import * as z from "zod";
 import { zodResponseFormat } from "openai/helpers/zod"
 import OpenAI from "openai";
-import promptTemplate from "./openAIPrompt"
-import { PromptTemplateVariables } from "../types";
 
 const fillPromptTemplate = (promptTemplate: string, variables: {}) => {
   return promptTemplate.replace(/\{\{(\w+)\}\}/g, (_, key) => JSON.stringify(variables[key]));
@@ -15,7 +13,7 @@ const openai = new OpenAI({
 
 // Function to get a response conforming to the specified JSON schema
 export async function getAssistantResponse<T extends z.ZodRawShape>(
-  promptTemplateVariables: PromptTemplateVariables,
+  promptTemplateVariables: {},
   responseSchema: z.ZodObject<T>,
   promptTemplate: string
 ) {
@@ -29,7 +27,9 @@ export async function getAssistantResponse<T extends z.ZodRawShape>(
       response_format: zodResponseFormat(responseSchema, "response_schema")
     });
 
-    const response = responseSchema.parse(JSON.parse(completion.choices[0].message.content));
+    const response = responseSchema.parse(
+        JSON.parse(completion.choices[0].message.content)
+    );
     return response;
   } catch (error) {
     console.error(error)

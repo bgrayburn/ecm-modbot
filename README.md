@@ -46,12 +46,14 @@ For the reference implementation, a bot implementaiton only supports a single ch
 ## Usage
 
 ## Todos
+- [X] add the ability to update the policies using natural language
 - [ ] add voting system
+- [ ] add help for specific commands
 - [ ] add the ability to direct chat users to instruct them why actions were taken against them
-- [ ] add the ability to update the policies using natural language
 - [ ] add E2E support
 - [ ] Add matrix server class?
 - [ ] Human overrides for bot decisions?
 
 ## Open Questions
 - Can GPT suggest when policies are ambiguous?
+- Currently updates reset the clock on a currently proposed policy. Should it?

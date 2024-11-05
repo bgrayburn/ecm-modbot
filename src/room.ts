@@ -1,4 +1,4 @@
-import matrixSDK, { ClientEvent, EventType, KnownMembership, MatrixClient, MsgType, RoomEvent } from "matrix-js-sdk";
+import matrixSDK, { ClientEvent, EventTimeline, EventType, KnownMembership, MatrixClient, MsgType, RoomEvent } from "matrix-js-sdk";
 import { Message, RoomConfig } from "./types";
 
 export default class Room {
@@ -82,5 +82,11 @@ export default class Room {
     }).catch(function(err) {
       console.log("Error joining room " + roomId + ": " + err);
     });
+  }
+
+  getRoomTopic(): string {
+    const room = this.matrixClient.getRoom(this.roomId);
+    const currentState = room.getLiveTimeline().getState(EventTimeline.FORWARDS);
+    return currentState.getStateEvents("m.room.topic", "")[0]?.getContent().topic || "";
   }
 }

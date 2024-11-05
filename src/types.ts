@@ -51,10 +51,4 @@ export const ActionSchema = z.object({
   userId: z.string().optional()
 })
 
-export type Action = z.infer<typeof Action>
-
-export type PromptTemplateVariables = {
-  policies: Policy[],
-  actions: string[],
-  message: string
-}
+export type Action = z.infer<typeof ActionSchema>

@@ -1,18 +1,17 @@
 import { RoomConfig, PolicyRepoConfig,  Policy, ActionOptions, Action, Message } from "./types";
 import PolicyRepo from "./policyRepository";
 import Room from "./room";
-import PolicyChecker, { PolicyCheckResponse } from "./policyChecker";
+import { checkMessageAgainstPolicies, PolicyCheckResponse } from "./policyChecker";
 import { getEnumValues } from "./util/typeUtil";
+import { getUpdatedPolicyText } from "./policyUpdate";
 
 export default class Bot {
   policyRepo: PolicyRepo
   room: Room
-  policyChecker: PolicyChecker
 
   constructor(roomConfig: RoomConfig, policyRepoConfig: PolicyRepoConfig){
     this.room = new Room(roomConfig, this.handleNewMessage.bind(this))
     this.policyRepo = new PolicyRepo(policyRepoConfig)
-    this.policyChecker = new PolicyChecker()
   }
 
   async handleNewMessage(message: Message): Promise<void> {
@@ -28,20 +27,20 @@ export default class Bot {
     }
     // check message against policies
     const approvedPolicies = await this.policyRepo.getApprovedPolicies()
-    const policyCheckResponse = await this.checkMessageAgainstPolicies(message, approvedPolicies)
+    const policyCheckResponse = await this.checkMessageAgainstPolicies(message, approvedPolicies, this.room.getRoomTopic())
     console.log('policyCheckResponse:')
     console.log(JSON.stringify(policyCheckResponse, null, 2))
     this.executeActions(policyCheckResponse.suggested_actions)
   }
 
-  async checkMessageAgainstPolicies(message: Message, policies: Policy[]): Promise<PolicyCheckResponse> {
+  async checkMessageAgainstPolicies(message: Message, policies: Policy[], topic: string): Promise<PolicyCheckResponse> {
     const actionOptions = this.getListOfActionOptions()
     const promptTemplateVariables = {
       message: message.content,
       author: message.author,
       actionOptions: actionOptions.join(', '),
     }
-    const response: PolicyCheckResponse = await this.policyChecker.checkMessageAgainstPolicies(message, policies, actionOptions)
+    const response: PolicyCheckResponse = await checkMessageAgainstPolicies(message, policies, actionOptions, topic)
     return response
   }
 
@@ -66,9 +65,9 @@ export default class Bot {
           break;
         default:
           if (action.type in ActionOptions) {
-            throw Error(`Action ${action.type} is not implemented`)
+            throw new Error(`Action ${action.type} is not implemented`)
           } else {
-            throw Error(`Unknown action type: ${action.type}`)
+            throw new Error(`Unknown action type: ${action.type}`)
           }
       }
     })
@@ -81,7 +80,7 @@ export default class Bot {
     const args = splitMessageContent.slice(2)
     switch (command) {
       case 'help':
-        this.room.sendMessage('Available commands: help, policies, policy, proposePolicy, approve')
+        this.room.sendMessage('Available commands: help, policies, policy, proposePolicy, proposedPolicyUpdate, approve')
         break;
       case 'policies':
         const proposedPolicies = await this.policyRepo.getProposedPolicyNames()
@@ -95,6 +94,21 @@ export default class Bot {
         break
       case 'proposePolicy':
         this.policyRepo.addProposedPolicy(args[0], args.slice(1).join(' '), author)
+        break;
+      case 'proposePolicyUpdate':
+        const policyName = args[0]
+        const currentPolicy = await this.policyRepo.getPolicy(policyName)
+        const policyText = currentPolicy.content
+        const updateInstructions = args.slice(1).join(' ')
+        const updatedPolicyText = (await getUpdatedPolicyText(updateInstructions, policyText)).policy_text
+        this.room.sendMessage(`Proposed policy update for ${policyName}:\n${updatedPolicyText}`)
+        try {
+          this.policyRepo.addProposedPolicy(policyName, updatedPolicyText, author)
+        } catch (e) {
+          if (e.message === `Policy ${policyName} already exists`) {
+            this.room.sendMessage(`Policy ${policyName} already exists. Please use a different name.`)
+          }
+        }
         break;
       case 'approve': // TODO: remove this after voting works
         this.policyRepo.approvePolicy(args[0])
