@@ -50,10 +50,14 @@ For the reference implementation, a bot implementaiton only supports a single ch
 - [ ] add voting system
 - [ ] add help for specific commands
 - [ ] add the ability to direct chat users to instruct them why actions were taken against them
+- [ ] add tests
 - [ ] add E2E support
+- [ ] Add spaces support (multiple rooms)?
 - [ ] Add matrix server class?
 - [ ] Human overrides for bot decisions?
+- [ ] Add the ability for the bot to manage room state (ex. topic)?
 
 ## Open Questions
 - Can GPT suggest when policies are ambiguous?
 - Currently updates reset the clock on a currently proposed policy. Should it?
+- Currently only 1 proposed update on a policy can exists, meaning that new proposals overwrite old ones. Should it?
