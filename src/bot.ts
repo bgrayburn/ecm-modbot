@@ -80,7 +80,13 @@ export default class Bot {
     const args = splitMessageContent.slice(2)
     switch (command) {
       case 'help':
-        this.room.sendMessage('Available commands: help, policies, policy, proposePolicy, proposedPolicyUpdate, approve')
+        this.room.sendMessage(`Available commands:
+           help,
+           policies,
+           policy <policy_name>,
+           proposePolicy <policy_name> <policy_text>,
+           proposedPolicyUpdate <policy_name> <update_instructions>,
+           approve <policy_name>`)
         break;
       case 'policies':
         const proposedPolicies = await this.policyRepo.getProposedPolicyNames()
@@ -97,25 +103,18 @@ export default class Bot {
         break;
       case 'proposePolicyUpdate':
         const policyName = args[0]
-        const currentPolicy = await this.policyRepo.getPolicy(policyName)
-        const policyText = currentPolicy.content
         const updateInstructions = args.slice(1).join(' ')
-        const updatedPolicyText = (await getUpdatedPolicyText(updateInstructions, policyText)).policy_text
+        const currentPolicy = await this.policyRepo.getApprovedPolicy(policyName)
+        const updatedPolicyText = (await getUpdatedPolicyText(updateInstructions, currentPolicy.content)).policy_text
+        await this.policyRepo.addProposedUpdatedPolicy(currentPolicy, updatedPolicyText, author)
         this.room.sendMessage(`Proposed policy update for ${policyName}:\n${updatedPolicyText}`)
-        try {
-          this.policyRepo.addProposedPolicy(policyName, updatedPolicyText, author)
-        } catch (e) {
-          if (e.message === `Policy ${policyName} already exists`) {
-            this.room.sendMessage(`Policy ${policyName} already exists. Please use a different name.`)
-          }
-        }
         break;
       case 'approve': // TODO: remove this after voting works
         this.policyRepo.approvePolicy(args[0])
         this.room.sendMessage(`Approved policy: ${args[0]}`)
         break;
       default:
-        this.room.sendMessage(`Unknown command ${args.join(' ')}`)
+        this.room.sendMessage(`Unknown command ${args.join(' ')}. Try using the 'help' command to learn more.`)
     }
   }
 }

@@ -68,7 +68,11 @@ export default class PolicyRepo {
       votes: [],
       author: policyAuthor
     }
-    return this.addPolicy(policy, overwrite)
+    try{
+      return this.addPolicy(policy, overwrite)
+    } catch (e) {
+      throw new Error(`Failed to add policy ${policyName}: ${e}`)
+    }
   }
   
   async addVoteOnPolicy(policyName, vote: boolean) {
@@ -92,18 +96,17 @@ export default class PolicyRepo {
     return policyFile ? { ...policyFile, status: PolicyStatus.Approved, name } as Policy : undefined
   }
 
-  async getPolicy(name: string): Promise<Policy | undefined> {
-    const proposedPolicy = await this.getProposedPolicy(name)
-    if (proposedPolicy !== undefined) {
-      return proposedPolicy
-    }
-    return await this.getApprovedPolicy(name)
+  async getPolicy(name: string): Promise<Policy[]> {
+    const proposedPolicyPromise = this.getProposedPolicy(name)
+    const approvedPolicyPromise = await this.getApprovedPolicy(name)
+    const policies = (await Promise.all([proposedPolicyPromise, approvedPolicyPromise])).filter(p => p !== undefined)
+    return policies
   }
 
   async getVotesForPolicy(policyName: string) {
     //use getPolicy to get a policy then tally up the votes for and against
     //return the result as an object with two properties: for and against
-    const policy = await this.getPolicy(policyName)
+    const policy = await this.getProposedPolicy(policyName)
     const votes = policy.votes.reduce((acc: {for: number, against: number}, vote: boolean) => {
       if (vote) {
         acc.for += 1
@@ -147,4 +150,16 @@ export default class PolicyRepo {
     const approvedPolicyPath = path.join(this.basePath, 'approved', policyName)
     return fs.writeFile(approvedPolicyPath, JSON.stringify(approvedPolicyFile))
   }
+
+  async addProposedUpdatedPolicy(currentPolicy: Policy, policyContent: string, author: string) {
+    const updatedPolicy: Policy = {
+      ...currentPolicy,
+      content: policyContent,
+      author,
+      status: PolicyStatus.Proposed,
+      updatedAt: new Date().toISOString()
+    }
+    return this.addPolicy(updatedPolicy, true)
+  }
+
 }
