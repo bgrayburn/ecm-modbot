@@ -86,7 +86,9 @@ export default class Room {
 
   getRoomTopic(): string {
     const room = this.matrixClient.getRoom(this.roomId);
-    const currentState = room.getLiveTimeline().getState(EventTimeline.FORWARDS);
-    return currentState.getStateEvents("m.room.topic", "")[0]?.getContent().topic || "";
+    const roomState = room.getLiveTimeline().getState(EventTimeline.FORWARDS);
+    const topicEvent = roomState.getStateEvents("m.room.topic", "")
+    const topic = topicEvent ? topicEvent.getContent().topic : "";
+    return topic
   }
 }
