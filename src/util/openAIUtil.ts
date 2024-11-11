@@ -19,6 +19,7 @@ export async function getAssistantResponse<T extends z.ZodRawShape>(
 ) {
   try {
     const prompt = fillPromptTemplate(promptTemplate, promptTemplateVariables)
+    console.log(`prompt: ${prompt}`)
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [

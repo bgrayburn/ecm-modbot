@@ -91,4 +91,39 @@ export default class Room {
     const topic = topicEvent ? topicEvent.getContent().topic : "";
     return topic
   }
+
+  getUsers(minPowerLevel: number = 0): string[] {
+    const room = this.matrixClient.getRoom(this.roomId);
+    const roomState = room.getLiveTimeline().getState(EventTimeline.FORWARDS);
+    const members = roomState.getMembers();
+    const powerLevelEvents = roomState.getStateEvents("m.room.power_levels", "")
+    const users = members.filter(member => {
+      const powerLevel = powerLevelEvents?.getContent().users[member.userId]
+      return powerLevel && powerLevel >= minPowerLevel
+    }).map(member => member.userId);
+    return users
+  }
+
+  getUserPowerLevel(userId: string): number {
+    const room = this.matrixClient.getRoom(this.roomId);
+    const roomState = room.getLiveTimeline().getState(EventTimeline.FORWARDS);
+    const powerLevelEvents = roomState.getStateEvents("m.room.power_levels", "")
+    const powerLevel = powerLevelEvents?.getContent().users[userId]
+    return powerLevel ? powerLevel : 0
+  }
+
+  getChatHistory(): Message[] {
+    const room = this.matrixClient.getRoom(this.roomId);
+    const events = room.getLiveTimeline().getEvents();
+    const messages = events.filter(event => event.getType() === EventType.RoomMessage && event.getContent().msgtype === MsgType.Text).map(event => {
+      const body = event.getContent().body;
+      const msg: Message = {
+        id: event.getId(),
+        content: body,
+        author: event.getSender()
+      }
+      return msg
+    });
+    return messages
+  }
 }

@@ -75,7 +75,7 @@ export default class PolicyRepo {
     }
   }
   
-  async addVoteOnPolicy(policyName, vote: boolean) {
+  async addVoteOnPolicy(policyName: string, author: string, vote: boolean) {
     // TODO: check if policy exists
     const policyPath = path.join(this.basePath, 'proposed', policyName)
     const file = await fs.readFile(policyPath)
@@ -162,4 +162,7 @@ export default class PolicyRepo {
     return this.addPolicy(updatedPolicy, true)
   }
 
+  checkIfPolicyShouldBeApproved(policyNameToVoteOn: string) {
+    console.error("Method not implemented.");
+  }
 }

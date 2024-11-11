@@ -1,4 +1,4 @@
-import { RoomConfig, PolicyRepoConfig,  Policy, ActionOptions, Action, Message } from "./types";
+import { RoomConfig, PolicyRepoConfig,  Policy, ActionOptions, Action, Message, MessageContext } from "./types";
 import PolicyRepo from "./policyRepository";
 import Room from "./room";
 import { checkMessageAgainstPolicies, PolicyCheckResponse } from "./policyChecker";
@@ -27,20 +27,24 @@ export default class Bot {
     }
     // check message against policies
     const approvedPolicies = await this.policyRepo.getApprovedPolicies()
-    const policyCheckResponse = await this.checkMessageAgainstPolicies(message, approvedPolicies, this.room.getRoomTopic())
+    const messageContext: MessageContext = {
+      roomTopic: this.room.getRoomTopic(),
+      chatHistory: this.room.getChatHistory()
+    }
+    const policyCheckResponse = await this.checkMessageAgainstPolicies(message, approvedPolicies, messageContext)
     console.log('policyCheckResponse:')
     console.log(JSON.stringify(policyCheckResponse, null, 2))
     this.executeActions(policyCheckResponse.suggested_actions)
   }
 
-  async checkMessageAgainstPolicies(message: Message, policies: Policy[], topic: string): Promise<PolicyCheckResponse> {
+  // TODO: redundant function name checkMessageAgainstPolicies
+  async checkMessageAgainstPolicies(
+    message: Message,
+    policies: Policy[],
+    messageContext: MessageContext,
+  ): Promise<PolicyCheckResponse> {
     const actionOptions = this.getListOfActionOptions()
-    const promptTemplateVariables = {
-      message: message.content,
-      author: message.author,
-      actionOptions: actionOptions.join(', '),
-    }
-    const response: PolicyCheckResponse = await checkMessageAgainstPolicies(message, policies, actionOptions, topic)
+    const response: PolicyCheckResponse = await checkMessageAgainstPolicies(message, policies, actionOptions, messageContext)
     return response
   }
 
@@ -74,7 +78,14 @@ export default class Bot {
   }
 
   async handleCommand(messageContent: string, author: string): Promise<void> {
-    console.log(`handling command: ${messageContent}`)
+    // only people with powerlevel > 25 can give commands to the bot
+    const authorPowerLevels = await this.room.getUserPowerLevel(author)
+    if (authorPowerLevels <= 25) {
+      this.room.sendMessage(`${author}: you must have power level > 25 to give me commands`)
+      return
+    }
+
+    console.log(`handling command: ${messageContent} from user: ${author}`)
     const splitMessageContent = messageContent.split(' ')
     const command = splitMessageContent[1]
     const args = splitMessageContent.slice(2)
@@ -86,7 +97,8 @@ export default class Bot {
            policy <policy_name>,
            proposePolicy <policy_name> <policy_text>,
            proposedPolicyUpdate <policy_name> <update_instructions>,
-           approve <policy_name>`)
+           approve <policy_name>
+           vote <policy_name> <(y)es/(n)o>`)
         break;
       case 'policies':
         const proposedPolicies = await this.policyRepo.getProposedPolicyNames()
@@ -112,6 +124,19 @@ export default class Bot {
       case 'approve': // TODO: remove this after voting works
         this.policyRepo.approvePolicy(args[0])
         this.room.sendMessage(`Approved policy: ${args[0]}`)
+        break;
+      case 'vote':
+        const policyNameToVoteOn = args[0]
+        const vote = args[1]
+        if (['yes', 'y'].includes(vote.toLowerCase())) {
+          await this.policyRepo.addVoteOnPolicy(policyNameToVoteOn, author, true)
+          this.policyRepo.checkIfPolicyShouldBeApproved(policyNameToVoteOn, )
+        } else if (['no', 'n'].includes(vote.toLowerCase())) {
+          await this.policyRepo.addVoteOnPolicy(policyNameToVoteOn, author, false)
+          this.policyRepo.checkIfPolicyShouldBeApproved(policyNameToVoteOn)
+        } else {
+          this.room.sendMessage(`Invalid vote: ${vote}. Please vote 'yes' or 'no'.`)
+        }
         break;
       default:
         this.room.sendMessage(`Unknown command ${args.join(' ')}. Try using the 'help' command to learn more.`)

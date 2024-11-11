@@ -33,6 +33,11 @@ export type Message = {
   author: string
 }
 
+export type MessageContext = {
+  roomTopic: string
+  chatHistory: Message[]
+}
+
 export type PolicyRepoConfig = {
    basePath: string,
 }
