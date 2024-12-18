@@ -10,8 +10,8 @@ For the reference implementation, a bot implementaiton only supports a single ch
     ROOM {
       homeserver string
       accessToken string
-      userId: string
-      roomId: string
+      userId string
+      roomId string
     }
     POLICY_REPOSITORY {
       string git_url
