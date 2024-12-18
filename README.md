@@ -1,5 +1,5 @@
 # Evolution Collective Moderation (ECM) Bot
-
+**IMPORTANT:** This repository contains a work in progress. Expect nothing to work.
 ## About
 The ECM bot is a reference implemenation of the proposed design pattern found [here](https://github.com/bgrayburn/Evolutionary-Collective-Moderation-Design-Pattern/blob/main/DesignPattern.md). Its main purpose to is collect proposed natural language moderation policies from users in the channel, use a voting system to transition them to the `accepted` status, then apply them to the channel. The reference implementation uses Matrix as the communication layer, and Git to as a policy store.
 For the reference implementation, a bot implementaiton only supports a single chat room.
@@ -10,8 +10,8 @@ For the reference implementation, a bot implementaiton only supports a single ch
     ROOM {
       homeserver string
       accessToken string
-      userId: string
-      roomId: string
+      userId string
+      roomId string
     }
     POLICY_REPOSITORY {
       string git_url
