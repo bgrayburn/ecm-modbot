@@ -19,6 +19,6 @@
     "devDependencies": {
         "@types/cli-color": "^2.0.6",
         "@types/node": "^22.7.9",
-        "tsx": "^4.19.1"
+        "tsx": "^4.19.2"
     }
 }
