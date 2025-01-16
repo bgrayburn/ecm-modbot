@@ -47,8 +47,10 @@ For the reference implementation, a bot implementaiton only supports a single ch
 
 ## Todos
 - [X] add the ability to update the policies using natural language
+- [X] use zod unions to specify objects for each action
+- [ ] use zod to validate command messages and provide meaningful feedback
 - [ ] add voting system
-- [ ] add chat history to prompt context
+- [X] add chat history to prompt context
 - [ ] add help for specific commands
 - [ ] add the ability to direct chat users to instruct them why actions were taken against them
 - [ ] add tests
@@ -62,6 +64,5 @@ For the reference implementation, a bot implementaiton only supports a single ch
 - Can GPT suggest when policies are ambiguous?
 - Currently updates reset the clock on a currently proposed policy. Should it?
 - Currently only 1 proposed update on a policy can exists, meaning that new proposals overwrite old ones. Should it?
-- Should the bot be given access to the chat history when making decisions? This would allow for more complicated policies like.
-- What about policies like (no speaking ill of people in the chat room?). This would require the bot to have a way to identify people in the chat room.
+- What about policies like *no speaking ill of people in the chat room?*. This would require the bot to have a way to identify people in the chat room.
 

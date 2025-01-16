@@ -14,7 +14,7 @@ export default class Bot {
     this.policyRepo = new PolicyRepo(policyRepoConfig)
   }
 
-  async handleNewMessage(message: Message): Promise<void> {
+  private async handleNewMessage(message: Message): Promise<void> {
     // check if message is command to bot
     console.log(`handling message: ${JSON.stringify(message, null, 2)}`)
     if (message.content.startsWith(`${this.room.userId.slice(1).split(':')[0]}:`)) {
@@ -38,7 +38,7 @@ export default class Bot {
   }
 
   // TODO: redundant function name checkMessageAgainstPolicies
-  async checkMessageAgainstPolicies(
+  private async checkMessageAgainstPolicies(
     message: Message,
     policies: Policy[],
     messageContext: MessageContext,
@@ -52,11 +52,11 @@ export default class Bot {
     return getEnumValues<ActionOptions>(ActionOptions)
   }
 
-  executeActions(actions: Action[]): void {
+  private executeActions(actions: Action[]): void {
     actions.forEach(action => {
       switch (action.type) {
         case ActionOptions.SendMessage:
-          this.room.sendMessage(action.message)
+          this.room.sendMessage(`${action.userId}: ${action.message}`)
           break;
         case ActionOptions.RedactMessage:
           this.room.redactMessage(action.eventId)
@@ -67,17 +67,11 @@ export default class Bot {
         case ActionOptions.BanUser:
           this.room.banUser(action.userId)
           break;
-        default:
-          if (action.type in ActionOptions) {
-            throw new Error(`Action ${action.type} is not implemented`)
-          } else {
-            throw new Error(`Unknown action type: ${action.type}`)
-          }
       }
     })
   }
 
-  async handleCommand(messageContent: string, author: string): Promise<void> {
+  private async handleCommand(messageContent: string, author: string): Promise<void> {
     // only people with powerlevel > 25 can give commands to the bot
     const authorPowerLevels = await this.room.getUserPowerLevel(author)
     if (authorPowerLevels <= 25) {
@@ -112,6 +106,7 @@ export default class Bot {
         break
       case 'proposePolicy':
         this.policyRepo.addProposedPolicy(args[0], args.slice(1).join(' '), author)
+        this.room.sendMessage('Policy added to proposed policies')
         break;
       case 'proposePolicyUpdate':
         const policyName = args[0]

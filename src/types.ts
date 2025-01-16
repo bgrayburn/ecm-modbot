@@ -49,11 +49,32 @@ export enum ActionOptions {
   BanUser = 'banUser'
 }
 
-export const ActionSchema = z.object({
-  type: z.nativeEnum(ActionOptions),
-  message: z.string().optional(),
-  eventId: z.string().optional(),
-  userId: z.string().optional()
+export const SendMessageActionSchema = z.object({
+  type: z.literal(ActionOptions.SendMessage),
+  message: z.string(),
+  userId: z.string()
 })
+
+export const RedactMessageActionSchema = z.object({
+  type: z.literal(ActionOptions.RedactMessage),
+  eventId: z.string(),
+})
+
+export const KickUserActionSchema = z.object({
+  type: z.literal(ActionOptions.KickUser),
+  userId: z.string()
+})
+
+export const BanUserActionSchema = z.object({
+  type: z.literal(ActionOptions.BanUser),
+  userId: z.string()
+})
+
+export const ActionSchema = z.discriminatedUnion("type", [
+  SendMessageActionSchema,
+  RedactMessageActionSchema,
+  KickUserActionSchema,
+  BanUserActionSchema
+])
 
 export type Action = z.infer<typeof ActionSchema>
