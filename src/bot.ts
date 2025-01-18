@@ -1,4 +1,4 @@
-import { RoomConfig, PolicyRepoConfig,  Policy, ActionOptions, Action, Message, MessageContext } from "./types";
+import { RoomConfig, PolicyRepoConfig,  Policy, ActionOptions, Action, Message, MessageContext, BotCommand } from "./types";
 import PolicyRepo from "./policyRepository";
 import Room from "./room";
 import { checkMessageAgainstPolicies, PolicyCheckResponse } from "./policyChecker";
@@ -83,8 +83,11 @@ export default class Bot {
     const splitMessageContent = messageContent.split(' ')
     const command = splitMessageContent[1]
     const args = splitMessageContent.slice(2)
+    if (!Object.values(BotCommand).includes(command as BotCommand)) {
+      this.room.sendMessage(`Unknown command ${command}. Try using the 'help' command to learn more.`)
+    }
     switch (command) {
-      case 'help':
+      case BotCommand.Help:
         this.room.sendMessage(`Available commands:
            help,
            policies,
@@ -94,21 +97,21 @@ export default class Bot {
            approve <policy_name>
            vote <policy_name> <(y)es/(n)o>`)
         break;
-      case 'policies':
+      case BotCommand.ListPolicies:
         const proposedPolicies = await this.policyRepo.getProposedPolicyNames()
         const approvedPolicies = await this.policyRepo.getApprovedPolicyNames()
         const message = `Proposed policies: ${proposedPolicies.join(', ')}\nApproved policies: ${approvedPolicies.join(', ')}`
         this.room.sendMessage(message)
         break;
-      case 'policy':
+      case BotCommand.GetPolicy:
         const policy = await this.policyRepo.getPolicy(args[0])
         this.room.sendMessage(JSON.stringify(policy, null, 2))
         break
-      case 'proposePolicy':
+      case BotCommand.ProposePolicy:
         this.policyRepo.addProposedPolicy(args[0], args.slice(1).join(' '), author)
         this.room.sendMessage('Policy added to proposed policies')
         break;
-      case 'proposePolicyUpdate':
+      case BotCommand.ProposePolicyUpdate:
         const policyName = args[0]
         const updateInstructions = args.slice(1).join(' ')
         const currentPolicy = await this.policyRepo.getApprovedPolicy(policyName)
@@ -116,16 +119,16 @@ export default class Bot {
         await this.policyRepo.addProposedUpdatedPolicy(currentPolicy, updatedPolicyText, author)
         this.room.sendMessage(`Proposed policy update for ${policyName}:\n${updatedPolicyText}`)
         break;
-      case 'approve': // TODO: remove this after voting works
+      case BotCommand.ApprovePolicy: // TODO: remove this after voting works
         this.policyRepo.approvePolicy(args[0])
         this.room.sendMessage(`Approved policy: ${args[0]}`)
         break;
-      case 'vote':
+      case BotCommand.Vote:
         const policyNameToVoteOn = args[0]
         const vote = args[1]
         if (['yes', 'y'].includes(vote.toLowerCase())) {
           await this.policyRepo.addVoteOnPolicy(policyNameToVoteOn, author, true)
-          this.policyRepo.checkIfPolicyShouldBeApproved(policyNameToVoteOn, )
+          this.policyRepo.checkIfPolicyShouldBeApproved(policyNameToVoteOn)
         } else if (['no', 'n'].includes(vote.toLowerCase())) {
           await this.policyRepo.addVoteOnPolicy(policyNameToVoteOn, author, false)
           this.policyRepo.checkIfPolicyShouldBeApproved(policyNameToVoteOn)
@@ -133,8 +136,6 @@ export default class Bot {
           this.room.sendMessage(`Invalid vote: ${vote}. Please vote 'yes' or 'no'.`)
         }
         break;
-      default:
-        this.room.sendMessage(`Unknown command ${args.join(' ')}. Try using the 'help' command to learn more.`)
     }
   }
 }

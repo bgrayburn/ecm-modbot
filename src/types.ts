@@ -78,3 +78,13 @@ export const ActionSchema = z.discriminatedUnion("type", [
 ])
 
 export type Action = z.infer<typeof ActionSchema>
+
+export enum BotCommand {
+  Help = "help",
+  ListPolicies = "policies",
+  GetPolicy = "policy",
+  ProposePolicy = "proposePolicy",
+  ProposePolicyUpdate = "proposePolicyUpdate",
+  ApprovePolicy = "approve",
+  Vote = "vote"
+}
