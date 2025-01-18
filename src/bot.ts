@@ -93,7 +93,7 @@ export default class Bot {
            policies,
            policy <policy_name>,
            proposePolicy <policy_name> <policy_text>,
-           proposedPolicyUpdate <policy_name> <update_instructions>,
+           proposePolicyUpdate <policy_name> <update_instructions>,
            approve <policy_name>
            vote <policy_name> <(y)es/(n)o>`)
         break;
